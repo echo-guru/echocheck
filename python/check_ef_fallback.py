@@ -480,23 +480,18 @@ class EFFallbackChecker:
     def _extract_ef_from_measurements_table(self, text_lower: str) -> Optional[str]:
         """Extract EF value from the measurements table."""
         try:
-            # Look for the pattern "EF d 75 d %" that we found in the debug output
-            # The "d" characters are RTF formatting artifacts
+            # Look for EF patterns in the measurements table
+            # Handle various spacing formats from striprtf
             patterns = [
-                r'ef\s+d\s+(\d+(?:\.\d+)?)\s+d\s*%',  # "ef d 75 d %"
-                r'ef\s+(\d+(?:\.\d+)?)\s+%',  # "ef 75 %"
-                r'ef\s*(\d+(?:\.\d+)?)\s*%',  # "ef75%"
+                r'ef\s+(\d+(?:\.\d+)?)\s+%',  # "ef 25 %" (striprtf format)
+                r'ef\s*(\d+(?:\.\d+)?)\s*%',  # "ef25%" (no spaces)
+                r'ef\s+d\s+(\d+(?:\.\d+)?)\s+d\s*%',  # "ef d 25 d %" (regex format)
+                r'ef\s+(\d+(?:\.\d+)?)\s*%',  # "ef 25%" (standard format)
+                r'ef\W+(\d+(?:\.\d+)?)\W+%',  # "ef 25 %" (with any non-word chars)
+                r'ef\s*(\d+(?:\.\d+)?)\s*%',  # "ef25%" (flexible spacing)
             ]
             
-            for pattern in patterns:
-                matches = re.findall(pattern, text_lower, re.IGNORECASE)
-                if matches:
-                    ef_value = matches[0]
-                    if self._is_valid_ef(ef_value):
-                        return f"{ef_value}%"
-            
-            # Also try to find EF followed by a number and % in the table area
-            # Look for the measurements table section
+            # First, find the measurements table section
             table_indicators = ['ecg:', 'hr:', 'bp:', 'm mode', 'diastology', 'aortic doppler']
             table_start = -1
             
