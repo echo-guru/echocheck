@@ -39,6 +39,7 @@ const VerifyButton = ({ filename, onEfCheck, onError, isLoading, setIsLoading })
         The system will extract and compare Ejection Fraction values from:
       </p>
       
+      
       <ul className="text-sm text-gray-600 list-disc list-inside ml-4 space-y-1">
         <li>Conclusion section</li>
         <li>First mention in text body</li>
