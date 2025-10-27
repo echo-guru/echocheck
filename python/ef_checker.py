@@ -36,12 +36,13 @@ class EFChecker:
             'quantitative', 'measurements', 'data'
         ]
     
-    def extract_ef_values(self, text: str) -> Dict[str, Optional[str]]:
+    def extract_ef_values(self, text: str, rtf_path: str = None) -> Dict[str, Optional[str]]:
         """
         Extract EF values from different sections of the report.
         
         Args:
             text (str): Full text of the echocardiography report
+            rtf_path (str): Optional path to RTF file for direct conclusion extraction
             
         Returns:
             Dict containing EF values from conclusion, text, and calculations
@@ -56,10 +57,22 @@ class EFChecker:
             # Convert to lowercase for pattern matching
             text_lower = text.lower()
             
-            # Extract EF from conclusion section
-            result['conclusion'] = self._extract_from_section(
-                text, text_lower, self.conclusion_keywords, 'conclusion'
-            )
+            # Extract EF from conclusion section using direct extraction if RTF path is available
+            if rtf_path:
+                conclusion_text = self._extract_conclusion_section_direct(rtf_path)
+                if conclusion_text:
+                    conclusion_lower = conclusion_text.lower()
+                    result['conclusion'] = self._extract_first_ef(conclusion_lower)
+                else:
+                    # Fallback to regular section extraction
+                    result['conclusion'] = self._extract_from_section(
+                        text, text_lower, self.conclusion_keywords, 'conclusion'
+                    )
+            else:
+                # Use regular section extraction
+                result['conclusion'] = self._extract_from_section(
+                    text, text_lower, self.conclusion_keywords, 'conclusion'
+                )
             
             # Extract first EF mention in text body
             result['text'] = self._extract_first_ef(text_lower)
@@ -129,6 +142,47 @@ class EFChecker:
         except Exception as e:
             logger.error(f"Error extracting first EF: {str(e)}")
             return None
+    
+    def _extract_conclusion_section_direct(self, rtf_path: str) -> str:
+        """Extract conclusion section directly from RTF using pattern matching."""
+        try:
+            with open(rtf_path, 'r', encoding='utf-8', errors='ignore') as file:
+                content = file.read()
+            
+            # Look for the conclusion section using the pattern we found
+            # Pattern: CONCLUSIONS: followed by content until the next major section
+            conclusion_pattern = r'CONCLUSIONS?:\s*.*?(?=\\pard|\Z)'
+            
+            match = re.search(conclusion_pattern, content, re.IGNORECASE | re.DOTALL)
+            if match:
+                conclusion_text = match.group(0)
+                
+                # Clean up the conclusion text
+                # Convert \par to newlines
+                conclusion_text = re.sub(r'\\par\s*', '\n', conclusion_text)
+                
+                # Convert \tab to spaces
+                conclusion_text = re.sub(r'\\tab\s*', ' ', conclusion_text)
+                
+                # Remove RTF control words
+                conclusion_text = re.sub(r'\\[a-z]+\d*\s*', ' ', conclusion_text)
+                conclusion_text = re.sub(r'\\[^a-zA-Z\s{}]', '', conclusion_text)
+                
+                # Remove groups and braces
+                conclusion_text = re.sub(r'\{[^}]*\}', '', conclusion_text)
+                conclusion_text = re.sub(r'[{}]', '', conclusion_text)
+                
+                # Clean up whitespace
+                conclusion_text = re.sub(r'[ \t]+', ' ', conclusion_text)
+                conclusion_text = re.sub(r'\n\s*\n', '\n', conclusion_text)
+                conclusion_text = conclusion_text.strip()
+                
+                return conclusion_text
+            
+            return ""
+        except Exception as e:
+            logger.error(f"Error extracting conclusion section: {str(e)}")
+            return ""
     
     def _is_valid_ef(self, value: str) -> bool:
         """Validate if the extracted value is a reasonable EF percentage."""

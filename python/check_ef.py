@@ -26,7 +26,7 @@ def main():
         
         # Check EF consistency
         checker = EFChecker()
-        ef_values = checker.extract_ef_values(text)
+        ef_values = checker.extract_ef_values(text, rtf_path)
         result = checker.check_consistency(ef_values)
         
         # Output JSON result
