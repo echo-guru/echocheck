@@ -19,6 +19,10 @@ class EFFallbackChecker:
             r'(\d+(?:\.\d+)?)\s*%\s*ef',  # "55% ef"
             r'(\d+(?:\.\d+)?)\s*%\s*ejection',  # "55% ejection"
             r'lvef[:\s]*(\d+(?:\.\d+)?)\s*%?',  # "lvef: 55%"
+            r'ef\s*(\d+(?:\.\d+)?)\s*%',  # "ef 55%"
+            r'ef\s*[:\-]\s*(\d+(?:\.\d+)?)\s*%',  # "ef: 55%" or "ef - 55%"
+            r'ef\s*=\s*(\d+(?:\.\d+)?)\s*%',  # "ef = 55%"
+            r'ef\s+(\d+(?:\.\d+)?)\s*%',  # "ef 55%" with space
         ]
         
         # Keywords to identify conclusion section
@@ -30,7 +34,8 @@ class EFFallbackChecker:
         # Keywords to identify calculations table
         self.calc_keywords = [
             'calculation', 'measurement', 'values', 'parameters',
-            'quantitative', 'measurements', 'data'
+            'quantitative', 'measurements', 'data', 'measurements table',
+            'measurement table', 'calculations table', 'table'
         ]
     
     def extract_text_from_rtf(self, rtf_path: str) -> str:
@@ -101,6 +106,13 @@ class EFFallbackChecker:
             end = min(len(text), section_start + 500)
             section_text = text_lower[start:end]
             
+            # For calculations/measurements table, look for table-like structures
+            if section_name == 'calculations':
+                # Look for EF in table format (left column with EF, right column with value)
+                table_ef = self._extract_ef_from_table(section_text)
+                if table_ef:
+                    return table_ef
+            
             # Search for EF patterns in this section
             for pattern in self.ef_patterns:
                 matches = re.findall(pattern, section_text, re.IGNORECASE)
@@ -114,6 +126,54 @@ class EFFallbackChecker:
             
         except Exception as e:
             print(f"Error extracting from {section_name}: {str(e)}")
+            return None
+    
+    def _extract_ef_from_table(self, text: str) -> Optional[str]:
+        """Extract EF value from table-like structures."""
+        try:
+            # Look for patterns like "EF" followed by a value on the same line or next line
+            # This handles cases where EF is in the left column and value is in the right column
+            
+            # Pattern 1: EF followed by colon and value on same line
+            pattern1 = r'ef\s*[:\-]\s*(\d+(?:\.\d+)?)\s*%?'
+            matches = re.findall(pattern1, text, re.IGNORECASE)
+            if matches:
+                ef_value = matches[0]
+                if self._is_valid_ef(ef_value):
+                    return f"{ef_value}%"
+            
+            # Pattern 2: EF on one line, value on next line (common in tables)
+            lines = text.split('\n')
+            for i, line in enumerate(lines):
+                if re.search(r'\bef\b', line, re.IGNORECASE):
+                    # Check current line for value
+                    value_match = re.search(r'(\d+(?:\.\d+)?)\s*%?', line)
+                    if value_match:
+                        ef_value = value_match.group(1)
+                        if self._is_valid_ef(ef_value):
+                            return f"{ef_value}%"
+                    
+                    # Check next line for value
+                    if i + 1 < len(lines):
+                        next_line = lines[i + 1]
+                        value_match = re.search(r'(\d+(?:\.\d+)?)\s*%?', next_line)
+                        if value_match:
+                            ef_value = value_match.group(1)
+                            if self._is_valid_ef(ef_value):
+                                return f"{ef_value}%"
+            
+            # Pattern 3: EF with value separated by whitespace or tabs
+            pattern3 = r'ef\s+(\d+(?:\.\d+)?)\s*%?'
+            matches = re.findall(pattern3, text, re.IGNORECASE)
+            if matches:
+                ef_value = matches[0]
+                if self._is_valid_ef(ef_value):
+                    return f"{ef_value}%"
+            
+            return None
+            
+        except Exception as e:
+            print(f"Error extracting EF from table: {str(e)}")
             return None
     
     def _extract_first_ef(self, text_lower: str) -> Optional[str]:
