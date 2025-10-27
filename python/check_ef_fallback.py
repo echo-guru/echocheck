@@ -68,9 +68,41 @@ class EFFallbackChecker:
             
             try:
                 doc = word.Documents.Open(os.path.abspath(rtf_path))
-                text = doc.Content.Text
+                
+                # Extract main document content
+                main_text = doc.Content.Text
+                
+                # Extract footer content
+                footer_text = ""
+                try:
+                    for section in doc.Sections:
+                        for footer in section.Footers:
+                            footer_content = footer.Range.Text
+                            if footer_content.strip():
+                                footer_text += "\n" + footer_content.strip()
+                except Exception as footer_error:
+                    print(f"Warning: Could not extract footer content: {footer_error}")
+                
+                # Extract header content
+                header_text = ""
+                try:
+                    for section in doc.Sections:
+                        for header in section.Headers:
+                            header_content = header.Range.Text
+                            if header_content.strip():
+                                header_text += "\n" + header_content.strip()
+                except Exception as header_error:
+                    print(f"Warning: Could not extract header content: {header_error}")
+                
+                # Combine all content
+                full_text = main_text
+                if header_text:
+                    full_text = header_text + "\n" + full_text
+                if footer_text:
+                    full_text = full_text + "\n" + footer_text
+                
                 doc.Close()
-                return text
+                return full_text
             finally:
                 word.Quit()
                 
@@ -577,6 +609,7 @@ class EFFallbackChecker:
                 r'signed\s+dr\s+([a-z\s]+)',
                 r'dr\s+([a-z\s]+)\s+cardiologist',
                 r'dr\s+([a-z\s]+)\s+echo',
+                r'dr\s+([a-z\s]+)\s+\d{1,2}/\d{1,2}/\d{4}',  # "Dr Name 25/10/2025"
             ]
             
             for pattern in reporting_patterns:

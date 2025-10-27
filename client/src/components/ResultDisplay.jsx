@@ -102,16 +102,8 @@ const ResultDisplay = ({ results }) => {
               {results.referred_by && (
                 <div><span className="font-medium">Referred By:</span> {results.referred_by}</div>
               )}
-              {results.reporting_dr ? (
+              {results.reporting_dr && (
                 <div><span className="font-medium">Reported By:</span> {results.reporting_dr}</div>
-              ) : (
-                <div>
-                  <span className="font-medium">Reported By:</span> <span className="text-gray-400 italic">Not found in document</span>
-                  <div className="text-xs text-gray-500 mt-1">
-                    Note: Footer information may not be visible in RTF parsing. 
-                    Check the original document in Word for complete signature information.
-                  </div>
-                </div>
               )}
               {results.date && (
                 <div><span className="font-medium">Date:</span> {results.date}</div>
