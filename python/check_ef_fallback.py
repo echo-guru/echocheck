@@ -6,6 +6,7 @@ Uses regex patterns to extract EF values directly from RTF text.
 import sys
 import json
 import re
+import os
 from typing import Dict, Optional, List
 
 class EFFallbackChecker:
@@ -39,7 +40,39 @@ class EFFallbackChecker:
         ]
     
     def extract_text_from_rtf(self, rtf_path: str) -> str:
-        """Extract plain text from RTF file using improved parsing."""
+        """Extract plain text from RTF file using Word automation first, then fallback to regex."""
+        try:
+            # Try Word automation first for better text extraction (includes footers)
+            try:
+                return self._extract_text_with_word(rtf_path)
+            except Exception as word_error:
+                print(f"Word automation failed: {word_error}")
+                print("Falling back to regex-based RTF parsing...")
+                return self._extract_text_with_regex(rtf_path)
+        except Exception as e:
+            raise Exception(f"Error reading RTF file: {str(e)}")
+    
+    def _extract_text_with_word(self, rtf_path: str) -> str:
+        """Extract text using Word automation (includes footers)."""
+        try:
+            import win32com.client
+            
+            word = win32com.client.Dispatch("Word.Application")
+            word.Visible = False
+            
+            try:
+                doc = word.Documents.Open(os.path.abspath(rtf_path))
+                text = doc.Content.Text
+                doc.Close()
+                return text
+            finally:
+                word.Quit()
+                
+        except Exception as e:
+            raise Exception(f"Word automation error: {str(e)}")
+    
+    def _extract_text_with_regex(self, rtf_path: str) -> str:
+        """Extract text using regex-based RTF parsing (fallback method)."""
         try:
             with open(rtf_path, 'r', encoding='utf-8', errors='ignore') as file:
                 content = file.read()
@@ -68,7 +101,7 @@ class EFFallbackChecker:
             
             return text
         except Exception as e:
-            raise Exception(f"Error reading RTF file: {str(e)}")
+            raise Exception(f"Regex parsing error: {str(e)}")
     
     def extract_conclusion_section_direct(self, rtf_path: str) -> str:
         """Extract conclusion section directly from RTF using pattern matching."""
