@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* Custom styles for medical application */
+.medical-card {
+  @apply bg-white rounded-lg shadow-md border border-gray-200 p-6;
+}
+
+.medical-button {
+  @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
+}
+
+.medical-button-primary {
+  @apply bg-medical-blue text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+.medical-button-success {
+  @apply bg-medical-green text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
+}
+
+.medical-button-danger {
+  @apply bg-medical-red text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+}
+
+.medical-button-secondary {
+  @apply bg-gray-500 text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2;
+}
+
+.status-good {
+  @apply text-medical-green bg-green-50 border-green-200;
+}
+
+.status-discordant {
+  @apply text-medical-red bg-red-50 border-red-200;
+}
+
+.status-error {
+  @apply text-red-600 bg-red-50 border-red-200;
+}
+
+.dropzone {
+  @apply border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer transition-colors duration-200;
+}
+
+.dropzone:hover {
+  @apply border-medical-blue bg-blue-50;
+}
+
+.dropzone.drag-active {
+  @apply border-medical-blue bg-blue-100;
+}
