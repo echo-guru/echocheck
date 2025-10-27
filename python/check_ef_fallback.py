@@ -156,6 +156,10 @@ class EFFallbackChecker:
             if rtf_content and not result['calcs']:
                 result['calcs'] = self._extract_ef_from_rtf_table(rtf_content)
             
+            # Extract doctor and report information
+            doctor_info = self.extract_doctor_info(text)
+            result.update(doctor_info)
+            
             return result
             
         except Exception as e:
@@ -463,6 +467,78 @@ class EFFallbackChecker:
         except Exception as e:
             print(f"Error extracting EF from measurements table: {str(e)}")
             return None
+    
+    def extract_doctor_info(self, text: str) -> Dict[str, Optional[str]]:
+        """Extract doctor and report information from the text."""
+        result = {
+            'referred_by': None,
+            'patient_name': None,
+            'date': None,
+            'reporting_dr': None
+        }
+        
+        try:
+            text_lower = text.lower()
+            
+            # Extract referring doctor
+            referred_patterns = [
+                r'referred by\s+dr\s+([a-z\s]+?)(?:\s+d\s+|\s+date|\s+id)',
+                r'referred by\s+([a-z\s]+?)(?:\s+d\s+|\s+date|\s+id)',
+            ]
+            
+            for pattern in referred_patterns:
+                matches = re.findall(pattern, text_lower, re.IGNORECASE)
+                if matches:
+                    doctor_name = matches[0].strip().title()
+                    result['referred_by'] = f"Dr {doctor_name}"
+                    break
+            
+            # Extract patient name (look for name patterns)
+            name_patterns = [
+                r'(?:mrs|mr|ms|dr)\s+([a-z\s]+?)(?:\s+d\s+-\d+\s+date|\s+d\s+date|\s+date|\s+id|\s+referred)',
+                r'patient:\s*([a-z\s]+)',
+            ]
+            
+            for pattern in name_patterns:
+                matches = re.findall(pattern, text_lower, re.IGNORECASE)
+                if matches:
+                    patient_name = matches[0].strip().title()
+                    result['patient_name'] = patient_name
+                    break
+            
+            # Extract date
+            date_patterns = [
+                r'date\s+(\d{1,2}\s+\w+\s+\d{4})',
+                r'(\d{1,2}\s+\w+\s+\d{4})',
+            ]
+            
+            for pattern in date_patterns:
+                matches = re.findall(pattern, text_lower, re.IGNORECASE)
+                if matches:
+                    result['date'] = matches[0].strip()
+                    break
+            
+            # Look for reporting doctor in footer/signature area
+            # Common patterns for reporting doctors
+            reporting_patterns = [
+                r'reported by\s+dr\s+([a-z\s]+)',
+                r'signed\s+dr\s+([a-z\s]+)',
+                r'dr\s+([a-z\s]+)\s+cardiologist',
+                r'dr\s+([a-z\s]+)\s+echo',
+            ]
+            
+            for pattern in reporting_patterns:
+                matches = re.findall(pattern, text_lower, re.IGNORECASE)
+                if matches:
+                    doctor_name = matches[0].strip().title()
+                    result['reporting_dr'] = f"Dr {doctor_name}"
+                    break
+            
+            return result
+            
+        except Exception as e:
+            print(f"Error extracting doctor info: {str(e)}")
+            return result
     
     def _is_valid_ef(self, value: str) -> bool:
         """Validate if the extracted value is a reasonable EF percentage."""

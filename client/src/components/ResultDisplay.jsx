@@ -90,17 +90,24 @@ const ResultDisplay = ({ results }) => {
           </div>
         </div>
 
-        {results.numeric_values && (
+        {(results.referred_by || results.patient_name || results.date || results.reporting_dr) && (
           <div className="mt-4 pt-4 border-t border-gray-300">
             <h4 className="font-medium text-sm text-gray-700 mb-2">
-              Numeric Values Detected:
+              Report Information:
             </h4>
-            <div className="text-sm text-gray-600">
-              {Object.entries(results.numeric_values).map(([section, value]) => (
-                <span key={section} className="inline-block mr-4">
-                  {section}: {value}%
-                </span>
-              ))}
+            <div className="text-sm text-gray-600 space-y-1">
+              {results.patient_name && (
+                <div><span className="font-medium">Patient:</span> {results.patient_name}</div>
+              )}
+              {results.referred_by && (
+                <div><span className="font-medium">Referred By:</span> {results.referred_by}</div>
+              )}
+              {results.reporting_dr && (
+                <div><span className="font-medium">Reported By:</span> {results.reporting_dr}</div>
+              )}
+              {results.date && (
+                <div><span className="font-medium">Date:</span> {results.date}</div>
+              )}
             </div>
           </div>
         )}
