@@ -88,8 +88,8 @@ app.post('/check-file', async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    // Run Python script to extract text and check EF
-    const pythonScript = path.join(__dirname, '..', 'python', 'check_ef.py');
+    // Run Python script to extract text and check EF (using fallback version)
+    const pythonScript = path.join(__dirname, '..', 'python', 'check_ef_fallback.py');
     const pythonProcess = spawn('python', [pythonScript, filePath]);
 
     let output = '';
