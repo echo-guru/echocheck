@@ -90,24 +90,13 @@ const ResultDisplay = ({ results }) => {
           </div>
         </div>
 
-        {(results.values?.referred_by || results.values?.patient_name || results.values?.date || results.values?.reporting_dr) && (
+        {results.values?.reporting_dr && (
           <div className="mt-4 pt-4 border-t border-gray-300">
             <h4 className="font-medium text-sm text-gray-700 mb-2">
               Report Information:
             </h4>
-            <div className="text-sm text-gray-600 space-y-1">
-              {results.values?.patient_name && (
-                <div><span className="font-medium">Patient:</span> {results.values.patient_name}</div>
-              )}
-              {results.values?.referred_by && (
-                <div><span className="font-medium">Referred By:</span> {results.values.referred_by}</div>
-              )}
-              {results.values?.reporting_dr && (
-                <div><span className="font-medium">Reported By:</span> {results.values.reporting_dr}</div>
-              )}
-              {results.values?.date && (
-                <div><span className="font-medium">Date:</span> {results.values.date}</div>
-              )}
+            <div className="text-sm text-gray-600">
+              <div><span className="font-medium">Reported By:</span> {results.values.reporting_dr}</div>
             </div>
           </div>
         )}
