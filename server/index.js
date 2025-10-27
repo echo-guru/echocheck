@@ -89,7 +89,7 @@ app.post('/check-file', async (req, res) => {
     }
 
     // Run Python script to extract text and check EF
-    const pythonScript = path.join(__dirname, '..', 'python', 'ef_checker.py');
+    const pythonScript = path.join(__dirname, '..', 'python', 'check_ef.py');
     const pythonProcess = spawn('python', [pythonScript, filePath]);
 
     let output = '';
