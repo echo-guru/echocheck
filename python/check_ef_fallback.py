@@ -40,15 +40,21 @@ class EFFallbackChecker:
         ]
     
     def extract_text_from_rtf(self, rtf_path: str) -> str:
-        """Extract plain text from RTF file using Word automation first, then fallback to regex."""
+        """Extract plain text from RTF file using multiple methods in order of preference."""
         try:
-            # Try Word automation first for better text extraction (includes footers)
+            # Try Word automation first for best text extraction (includes footers)
             try:
                 return self._extract_text_with_word(rtf_path)
             except Exception as word_error:
                 print(f"Word automation failed: {word_error}")
-                print("Falling back to regex-based RTF parsing...")
-                return self._extract_text_with_regex(rtf_path)
+                
+                # Try striprtf library for better RTF parsing
+                try:
+                    return self._extract_text_with_striprtf(rtf_path)
+                except Exception as striprtf_error:
+                    print(f"striprtf library failed: {striprtf_error}")
+                    print("Falling back to regex-based RTF parsing...")
+                    return self._extract_text_with_regex(rtf_path)
         except Exception as e:
             raise Exception(f"Error reading RTF file: {str(e)}")
     
@@ -70,6 +76,21 @@ class EFFallbackChecker:
                 
         except Exception as e:
             raise Exception(f"Word automation error: {str(e)}")
+    
+    def _extract_text_with_striprtf(self, rtf_path: str) -> str:
+        """Extract text using striprtf library (better RTF parsing)."""
+        try:
+            from striprtf import striprtf
+            
+            with open(rtf_path, 'r', encoding='utf-8', errors='ignore') as file:
+                rtf_content = file.read()
+            
+            # Use striprtf to extract text
+            text = striprtf.rtf_to_text(rtf_content)
+            
+            return text
+        except Exception as e:
+            raise Exception(f"striprtf parsing error: {str(e)}")
     
     def _extract_text_with_regex(self, rtf_path: str) -> str:
         """Extract text using regex-based RTF parsing (fallback method)."""
@@ -515,8 +536,10 @@ class EFFallbackChecker:
             
             # Extract referring doctor
             referred_patterns = [
-                r'referred by\s+dr\s+([a-z\s]+?)(?:\s+d\s+|\s+date|\s+id)',
-                r'referred by\s+([a-z\s]+?)(?:\s+d\s+|\s+date|\s+id)',
+                r'referred by\s+dr\s+([a-z\s]+?)(?:\s+d\s+|\s+date|\s+id|\|)',
+                r'referred by\s+([a-z\s]+?)(?:\s+d\s+|\s+date|\s+id|\|)',
+                r'referred by\s+dr\s+([a-z\s]+)',
+                r'referred by\s+([a-z\s]+)',
             ]
             
             for pattern in referred_patterns:
@@ -528,8 +551,9 @@ class EFFallbackChecker:
             
             # Extract patient name (look for name patterns)
             name_patterns = [
-                r'(?:mrs|mr|ms|dr)\s+([a-z\s]+?)(?:\s+d\s+-\d+\s+date|\s+d\s+date|\s+date|\s+id|\s+referred)',
+                r'(?:mrs|mr|ms|dr)\s+([a-z\s]+?)(?:\s+d\s+-\d+\s+date|\s+d\s+date|\s+date|\s+id|\s+referred|\|)',
                 r'patient:\s*([a-z\s]+)',
+                r'(?:mrs|mr|ms|dr)\s+([a-z\s]+)',
             ]
             
             for pattern in name_patterns:
